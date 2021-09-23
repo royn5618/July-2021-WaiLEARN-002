@@ -1,0 +1,318 @@
+---
+title: "WAI_Practice"
+author: "Sharon Lee"
+date: "20/9/2021"
+output:
+  html_document:
+    code_folding: hide
+    highlight: haddock
+    theme: flatly
+    toc: yes
+    toc_float: yes
+  pdf_document:
+    toc: yes
+  word_document:
+    toc: yes
+---
+
+```{r setup, include=FALSE}
+knitr::opts_chunk$set(message = FALSE, 
+                      warning = FALSE)
+```
+
+# Study Info 
+
+Aim = To assess the impact of Machine Translation (MT) on the processing of the English language as a secondary language by testing if MT output can influence the way MT users process English syntax. 
+
+RQ 1. Is the use of MT capable of affecting the way a second language is being processed by users when speaking in a second language?
+--if after performing a translation task using an MT system, the syntactic structure from the translation task is observed in the speakers??? subsequent utterance, then MT output can influence the syntactic processing of English as a second language. if participants described the images in English using the same structure previously seen in the output of GT more frequently than the structures used in the pre-test phase (which does not involve any interaction with GT), then our results would suggest that GT is capable of influencing participants??? grammatical choices.
+****HYPOTHESIS 1) when translating a text using an MT, the user???s syntactic choices when producing speech in a second language will mirror the syntax of the MT output, thus manifesting syntactic priming effects.
+
+RQ 2. Can MT systems facilitate the access and processing of syntactic structures that pose a challenge to L2 English speakers?
+-- because GT default output (as shown in descriptives) is NP, we hypothesize that participants will produce more NP constructions after being exposed to the MT output than PNP constructions, but they will produce more PNP constructions in the pretest because the pretest does not involve participants??? exposure to MT output. but bearing in mind NP is more difficult to Portugese native speakers.
+-- Observing the use of NP structure after being exposed to the output would suggest that the MT system would be facilitating the access to a syntactic alternative that is more complex to process for Portuguese speakers.
+****HYPOTHESIS 2) we hypothesise that in the pre-test phase, participants will translate the Portuguese sentences into English using a PNP structure as it resembles Portuguese in terms of word order, but we hypothesize that participants will produce more NP constructions after being exposed to the MT output than PNP constructions,
+
+RQ3. Is syntatic learning using MT a short-lived or long-last effect? 
+-- The post-test phase was carried out in the day following the pre-test and priming phases. It was included in the design aiming at examining whether any learning of the structures is a short-lived or long-lasting effect. If we observe a long-lasting effect, then we can conclude that a learning processing occurred during the priming phase and that this learning if of implicit nature. whether any priming effect observed would result in the learning of the primed structures via GT output.
+****HYPOTHESIS 5) we hypothesise that in the post-test phase, participants will use more NP structures than in the pre-test phase, indicating a persistence of the priming effect.
+
+RQ4. Do those with lower english proficiency repeat more google translate structure?
+****HYPOTHESIS 3) Those with lower english proficiency will repeat more google translate structure than those with higher english proficiency
+
+RQ5. Are people repeating more of GT syntactic structures in later trials?
+-- We also looked for learning trends in the data by examining whether participants adapted their behaviour during the course of the experiment and whether this adaptation was short-lived or a long-lasting effect. if we observe that the use of the challenging structure increases in the later trials with continuous exposure to the same structure leading participants to adapt to that structure in the course of the experiment, this would suggest that an implicit learning process took place in the course of the experiment as every instance of syntactic structure updates the speaker???s knowledge of that structure.
+****HYPOTHESIS 4) Furthermore, we hypothesise that this change in language behaviour will occur in the course of the experiment with continuous exposure to the same syntactic alternative, indicating that a learning process took place throughout the experiment session. 
+
+# Method
+
+N = 32 participants x 60 data points.
+
+Columns:
+DV (Prime): Binary varialbe of whether pp re-used GT structure or not. 0 = no, 1 = yes 
+Items/Items_id: the item image shown to pp. randomly ordered for each pp.
+Test: baseline, priming (shown 2 priming items), post-test (next day)
+EnglishGrade: proficiency of english of pp. range 0-25
+prime1/2: only during priming phase. the structure of the priming items shown by GT
+Structure: the syntatic structure of translated item.
+-- NP: Noun Phrase (default MT structure) e.g. the office table is full
+-- PNP: Propositional Noub Phrase e.g. the table of the office is full
+-- NO
+-- S: Genitive case, to express a relation of possession between nouns (e.g., the office???s table
+-- OF: same as PNP
+-- other: if they used a noun phase structure in the incorrect order (e.g., the table office),
+
+# Analyses
+
+1) Exploratory analyses
+--- % of PNPs / NPs / alternative structures at baseline / priming / post test
+
+2) GLMM
+-- Mixed-effects logit model and the glmer function of the lme4 package (to handle the repeated measures nature of a dataset that has a binary DV) I used a step-wise forward procedure for model building and fitting to find the simplest model that did not differ significantly from the full model in terms of variance explained. The numeric predictor (English test score) was centered and the factorial predictor (Test) was dummy coded (all means compared to a reference group). In order to make sure that the inclusion of the random slopes and random intercepts are justified we used Likelihood ratio tests which allowed us to compare the models (Baayen et al., 2008). 
+
+Random Effects: 1) Individuals / IDs and 2) Items. Maybe people behave differently across individuals or items.
+Fixed Effects: 1) English proficiency test score (continuous) to investigate the influence of this variable on participants??? responses and 2) a factorial predictor Test with two levels: baseline (pretest) and priming test.
+
+```{r dependencies}
+
+# Clear all
+rm(list=ls())
+
+#forces R to not use scientific notations
+options(scipen=999) 
+
+# Load dependencies
+library(tidyverse)
+library(tidyselect)
+library(ggplot2)
+#library(ggpubr)
+library(ggthemes)
+library(patchwork)
+library(lmerTest)
+library(sjPlot)
+library(rstatix)
+library(MuMIn)
+
+# get data
+data = read_csv2("data_32PP_Final_prime1_prime2.csv")
+
+```
+
+# EDA / Data Visualisation - Sharon 
+
+```{r}
+
+# make participant ID as a factor
+data$Participants <- as.factor(data$Participants)
+
+# count no. of prime by session
+data %>%
+  group_by(Test) %>%
+  dplyr::count(Prime)
+# At baseline, majority of speech structure isn't NP (i.e. priming = 0)
+# At priming and post-test, majority of speech structure is NP (i.e. priming = 1)
+
+# what are the primary structure of GT output?
+data %>%
+  filter(Test == "priming") %>%
+  dplyr::count(prime1)
+data %>%
+  filter(Test == "priming") %>%
+  dplyr::count(prime2)
+# We observed that all sentences in Portuguese were translated from Portuguese into English using a NP structure far more frequently than a PNP/other structure.
+
+# what are the primary structure of each session?
+testStructure <- data %>%
+  group_by(Test) %>%
+  dplyr::count(Structure)
+testStructure <- testStructure %>%
+  group_by(Test,Structure) %>%
+  mutate(percentage = n/640*100) %>%
+  ungroup()
+# at baseline, we observed that OF represents the participants??? most preferred structure to describe a relation of possession between nouns in English without any influence of GT output (33.1%)
+# at priming, after exposure to GT output, NP becomes participants' most preferred structure i.e. 51.1%
+# at post-test the next day, NP remains participants' most preferred structure i.e. 45.8%
+ggplot(data = testStructure, aes(x=Test, y=n, fill=Structure)) +
+  geom_bar(position=position_dodge(), stat="identity", width = 0.7) +
+  theme_hc() +
+  scale_fill_brewer(palette="Paired") +
+  scale_y_continuous(breaks = seq(0,350, by=50), limit = c(0,350)) + ylab("Count") + xlab("Test") +
+  theme(axis.title.x = element_text(colour = "grey30", size=16, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(colour = "grey30", size=16, vjust = 0.5, margin = margin(t = 0, r = 10, b = 0, l = 0)), 
+        plot.title = element_text(size=14),
+        axis.text  = element_text(colour = "grey30",size=14),
+        axis.text.y  = element_text(colour = "grey30",size=14)) 
+
+# descriptives on english grade
+summary(data$EnglishGrade)
+gradeTestStructure <- data %>%
+  mutate(EnglishGradeCategory = "Yes") %>%
+  mutate(EnglishGradeCategory = ifelse(EnglishGrade <= 11, "Low Proficiency", EnglishGradeCategory)) %>%
+  mutate(EnglishGradeCategory = ifelse(EnglishGrade >11 & EnglishGrade <18, "Medium Proficiency", EnglishGradeCategory)) %>%
+  mutate(EnglishGradeCategory = ifelse(EnglishGrade >17, "High Proficiency", EnglishGradeCategory)) %>%
+  mutate(EnglishGradeCategory = as.factor(EnglishGradeCategory)) %>%
+  group_by(Test,EnglishGradeCategory) %>%
+  dplyr::count(Structure)
+gradeTestStructure$EnglishGradeCategory <- factor(gradeTestStructure$EnglishGradeCategory, 
+                  levels = c("Low Proficiency", "Medium Proficiency", "High Proficiency")) 
+# relationship between english proficiency, structure use and test
+ggplot(data = gradeTestStructure, aes(x=Test, y=n, fill=Structure)) +
+  geom_bar(position=position_dodge(), stat="identity", width = 0.7) +
+  theme_hc() +
+  scale_fill_brewer(palette="Paired") +
+  scale_y_continuous(breaks = seq(0,120, by=20), limit = c(0,120)) + ylab("Count") + xlab("Test") +
+  theme(axis.title.x = element_text(colour = "grey30", size=16, margin = margin(t = 10, r = 0, b = 0, l = 0)),
+        axis.title.y = element_text(colour = "grey30", size=16, vjust = 0.5, margin = margin(t = 0, r = 10, b = 0, l = 0)), 
+        plot.title = element_text(size=14),
+        axis.text  = element_text(colour = "grey30",size=12),
+        axis.text.y  = element_text(colour = "grey30",size=12)) +
+  facet_wrap(~EnglishGradeCategory)
+
+# significant differences in structure types in each test?
+chisq.test(data$Test, data$Structure, correct=FALSE)
+
+
+```
+
+# Model Building & Selection - Sharon 
+
+Potential independent variables of interest :
+- English Test Grades (continuous)
+- Items number (continuous)
+- Test (factorial) with three levels: baseline (pre-test), priming test and post-test.
+
+Dependent variable: binary priming= 1 or 0
+
+```{r}
+
+# Preprocesing
+
+# factorise the independent variable that are character strings
+data$Test <- as.factor(data$Test)
+
+# ensure Test 'baseline' is reference level 
+data$Test <- factor(data$Test, levels = c("baseline", "priming", "posttest")) 
+
+# contrasts setting for Test
+contr.treatment(3)
+contrasts(data$Test) = contr.treatment(3)
+
+# centre the continuous variables
+data$EnglishGrade=scale(data$EnglishGrade, center = TRUE)
+data$Items=scale(data$Items, center = TRUE)
+
+
+# Model Building - Testing Random Effects
+
+# generate a baseline fixed effect model GLM and a baseline mixed model with a random intercept for ID
+m0.glm = glm(Prime ~ 1, family = binomial, data = data) # baseline model glm
+m0.glmer = glmer(Prime ~ (1|Participants), data = data, family = binomial) # base-line mixed-model
+
+# check whether including the random effect of participants is better than the fixed effect model by comparing the AIC of the two models. if smaller, then yes.
+aic.glmer <- AIC(logLik(m0.glmer))
+aic.glm <- AIC(logLik(m0.glm))
+aic.glmer; aic.glm # AIC of mixed model is smaller, but is this reduction enough/sufficient to justify its inclusion? Apply Model Likelihood Ratio Test 
+null.id = -2 * logLik(m0.glm) + 2 * logLik(m0.glmer)
+pchisq(as.numeric(null.id), df=1, lower.tail=F) # p-value is <0.05, justified inclusion.
+
+# test whether including participants only in model as random effect is better than including participants & items as random effect 
+ma.glmer = glmer(Prime ~ (1|Participants), data = data, family = binomial)
+mb.glmer = glmer(Prime ~ (1|Participants) + (1|Items), data = data, family = binomial)
+# compare models
+anova(ma.glmer, mb.glmer, test = "Chisq", refit = F) # including item as an additional random intercept is not better than just participants alone - dropped. 
+null.id = -2 * logLik(ma.glmer) + 2 * logLik(mb.glmer)
+pchisq(as.numeric(null.id), df=1, lower.tail=F) # Model Liklihood Ratio Test reveals same. Proceeding with including participants only as random effect. 
+
+
+# Model Fitting
+# procedure = manual step-wise step-up, forward elimination procedure. 
+
+# add control to avoid unnecessary failures to converge
+m0.glmer <- glmer(Prime ~ 1+ (1|Participants), family = binomial, data = data, control=glmerControl(optimizer="bobyqa"))
+
+# procedure for predictor 1 = Test
+ifelse(min(ftable(data$Test, data$Prime)) == 0, "incomplete info", "okay") # check for incomplete info
+m1.glmer <- update(m0.glmer, .~.+Test) # update model with added predictor 1
+anova(m1.glmer, m0.glmer, test = "Chi") # compare model 
+# adding Test significantly improved our model - proceed with including Test in the model.
+
+# procedure for predictor 2 = englishgrade
+ifelse(min(ftable(data$EnglishGrade, data$Prime)) == 0, "incomplete info", "okay") # check for incomplete info
+m2.glmer <- update(m1.glmer, .~.+EnglishGrade) # update model with added predictor 2
+ifelse(max(car::vif(m2.glmer)) <= 3,  "VIFs okay", "VIFs unacceptable") # check for VIF
+anova(m2.glmer, m1.glmer, test = "Chi") # compare model 
+# adding englishgrade significantly improved our model - proceed with including EnglishGrade in the model.
+
+# procedure for predictor 3 = Items
+ifelse(min(ftable(data$Items, data$Prime)) == 0, "incomplete info", "okay") # check for incomplete info
+m3.glmer <- update(m2.glmer, .~.+Items) # update model with added predictor 3
+ifelse(max(car::vif(m3.glmer)) <= 3,  "VIFs okay", "VIFs unacceptable") # check for VIF
+anova(m3.glmer, m2.glmer, test = "Chi") # compare models
+Anova(m3.glmer, test = "Chi")
+# adding Items significantly improved our model (albeit with slight BIC increase) - proceed with including Items in the model.
+
+# procedure for interaction 1 = Test*EnglishGrade
+ifelse(min(ftable(data$Test, data$EnglishGrade, data$Prime)) == 0, "incomplete info", "okay") # check for incomplete info - has incomplete info. drop this 
+
+# procedure for interaction 2 = Test*Items
+ifelse(min(ftable(data$Test, data$Items, data$Prime)) == 0, "incomplete info", "okay") # check for incomplete info 
+m4.glmer <- update(m3.glmer, .~.+Test*Items) # update model with added interaction 2
+ifelse(max(car::vif(m4.glmer)) <= 3,  "VIFs okay", "VIFs unacceptable") # check for VIF - not good
+car::vif(m4.glmer) # VIF all below 5, which should be 'okay'. 
+anova(m4.glmer, m3.glmer, test = "Chi") # compare models - not sig.
+Anova(m4.glmer, test = "Chi") # not sig. therefore interaction not included.
+
+# procedure for interaction 3 = Items*EnglishGrade
+ifelse(min(ftable(data$EnglishGrade, data$Items, data$Prime)) == 0, "incomplete info", "okay") # check for incomplete info 
+m5.glmer <- update(m3.glmer, .~.+Items*EnglishGrade) # update model with added interaction 3
+ifelse(max(car::vif(m5.glmer)) <= 3,  "VIFs okay", "VIFs unacceptable") # check for VIF 
+anova(m5.glmer, m3.glmer, test = "Chi") # compare models - not sig.
+Anova(m5.glmer, test = "Chi") # not sig. therefore interaction not included.
+
+# procedure for interaction 4 = Items*EnglishGrade*Test
+ifelse(min(ftable(data$EnglishGrade, data$Items, data$Test, data$Prime)) == 0, "incomplete info", "okay") # check for incomplete info 
+m6.glmer <- update(m3.glmer, .~.+Items*EnglishGrade*Test) # update model with added interaction 4
+ifelse(max(car::vif(m6.glmer)) <= 3,  "VIFs okay", "VIFs unacceptable") # check for VIF - not good
+car::vif(m6.glmer) # VIF all below 5, which should be 'okay'. 
+anova(m6.glmer, m3.glmer, test = "Chi") # compare models - not sig. therefore not included.
+
+# Our final, minimal, adequate model seem to be model 3, with the 3 IVs included as separate predictors.
+
+# rename final model, test if it performs sig. better than minimal baseline mode
+mlr.glmer <- m3.glmer 
+# final model better than base-line model?
+sigfit <- anova(mlr.glmer, m0.glmer, test = "Chi") 
+# inspect - yes
+sigfit
+# print summary
+summary(mlr.glmer)
+
+```
+
+# Conclusion / Summary of Results
+
+* RQ 1. Is the use of MT (Google Translate) capable of affecting the way a second language is being processed by users when speaking in a second language? 
+Fist of all, We observed that by default, the preferred English sentence structure of Google Translate is NP (sentences in Portuguese were translated from Portuguese into English using a NP structure far more frequently than a PNP/other structure).At baseline and before exposure to Google Translate, we observed that OF represents the participants??? most preferred structure to describe a relation of possession between nouns in English without any influence of GT output (33.1%). At the priming stage after participants were exposed to the output of Google Translate, NP, which is the default sentence structure of Google Translate became participants' most preferred structure when describing images in English (51.1%). Participants described the images in English using the same structure previously seen in the output of Google Translate more frequently than the structures used in the baseline phase (which does not involve any interaction with GT), thus suggesting Google Translate is capable of influencing participants??? grammatical choices and the processing of a second language.
+
+* RQ 2. Can MT systems facilitate the access and processing of syntactic structures that pose a challenge to L2 English speakers? As hypothesized, participants produced more PNP (OF) constructions (33.1%) in the baseline phase because that is the familiar grammatical sentence structure to Portugese native speakers. However, subsequent to exposure to the output of MT Google Translate, participants produced more NP constructions (51.1%) than PNP construction bearing in mind NP structures are more difficult to Portugese native speakers, thus suggesting MT systems such as Google translate faculutated the access and processing of syntactic structures that pose a challenge to L2 English speakers. 
+
+* In addition to descriptive analyses, statistical analyses using GLMM also revealed supporting evidence where we observe that participants??? syntactic choices in the priming test and post-test differed
+significantly from the baseline pre-test phase (p < 0.001). The negative estimate for the intercept indicates that responses using PNP structures were more frequent in the baseline condition than in the priming and post-test phases. Thus, after the prime items in which participants were exposed to NP structures via GT output, participants produced more NP structures than in the baseline pre-test with no influence of GT output.
+
+* RQ3. Is syntatic learning using MT a short-lived or long-last effect? 
+The post-test phase was carried out in the day following the pre-test and priming phases. At post-test the next day, NP remains participants' most preferred structure i.e. 45.8%. This suggests learning effect is long-lasting (i.e., until the next day) thus of implicit nature. 
+
+* RQ4. Do those with lower english proficiency repeat more google translate structure?
+Statistical analysis using GLMM revealed that the variable EnglishGrade was significant (p < 0.001), suggesting that participants with higher english proficiency used more of the NP sentence structure as per the default of Google Translate than participants with lower english proficiency, which was contradictory to what we originally hypothesized.  
+
+* RQ5. Are people repeating more of GT syntactic structures in later trials?
+Statistical analysis using GLMM revealed that the variable Items was significant (p < 0.05), confirming that the use of the challenging structure increases in the later trials with continuous exposure to the same structure leading participants to adapt to that structure in the course of the experiment. This would suggest that an implicit learning process took place in the course of the experiment as every instance of syntactic structure updates the speaker???s knowledge of that structure. 
+
+
+
+
+
+
+
+
+
